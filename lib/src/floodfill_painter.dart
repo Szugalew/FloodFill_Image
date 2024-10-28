@@ -111,7 +111,7 @@ class FloodFillPainter extends CustomPainter {
     if (_checkAvoidColor(touchColor)) return;
     if (onFloodFillStart != null) onFloodFillStart!(position,image);
 
-    _filler?.setTargetColor(touchColor);
+    _filler!.setTargetColor(touchColor);
     await _filler!.floodFill(pX, pY);
 
     ui.decodeImageFromPixels(

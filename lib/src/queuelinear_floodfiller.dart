@@ -5,8 +5,29 @@
 
 import 'dart:async';
 import 'dart:collection';
+import 'dart:typed_data';
 import 'dart:ui';
 import 'package:image/image.dart' as img;
+
+extension ImageColor on Color {
+  img.ColorInt16 toImageColor() {
+    Uint8List bytes = Uint8List.fromList([
+      this.red,
+      this.green,
+      this.blue,
+      this.alpha,
+    ]);
+    Int16List intList = Int16List.fromList(
+      bytes.map((e) => e.toSigned(16)).toList(),
+    );
+    return img.ColorInt16.rgba(
+      intList[0],
+      intList[1],
+      intList[2],
+      intList[3],
+    );
+  }
+}
 
 class QueueLinearFloodFiller {
   img.Image? image;
@@ -14,9 +35,9 @@ class QueueLinearFloodFiller {
   int _height = 0;
   int _cachedWidth = -1;
   int _cachedHeight = -1;
-  img.ColorInt8 _fillColor = img.ColorInt8.rgba(0, 0, 0, 0);
+  img.ColorInt16 _fillColor = img.ColorInt16.rgba(0, 0, 0, 0);
   int _tolerance = 8;
-  img.ColorInt8 _startColor = img.ColorInt8.rgba(0, 0, 0, 0);
+  img.ColorInt16 _startColor = img.ColorInt16.rgba(0, 0, 0, 0);
   List<bool>? _pixelsChecked;
   Queue<_FloodFillRange>? _ranges;
 
@@ -39,12 +60,7 @@ class QueueLinearFloodFiller {
   }
 
   void setTargetColor(Color targetColor) {
-    _startColor = img.ColorInt8.rgba(
-      targetColor.red,
-      targetColor.green,
-      targetColor.blue,
-      targetColor.alpha,
-    );
+    _startColor = targetColor.toImageColor();
   }
 
   void setTolerance(int value) {
@@ -61,9 +77,7 @@ class QueueLinearFloodFiller {
   }
 
   void setFillColor(Color value) {
-    _fillColor = img.ColorInt8.rgba(
-      value.red, value.green, value.blue, value.alpha,
-    );
+    _fillColor = value.toImageColor();
   }
 
   void _prepare() {
@@ -78,18 +92,6 @@ class QueueLinearFloodFiller {
   Future<void> floodFill(int x, int y) async {
     // Setup
     _prepare();
-
-    if (_startColor == Color(0)) {
-      // ***Get starting color.
-      img.Pixel startPixel = image!.getPixelSafe(x, y);
-
-      _startColor = img.ColorInt8.rgba(
-        startPixel.getChannel(img.Channel.red).toInt(),
-        startPixel.getChannel(img.Channel.green).toInt(),
-        startPixel.getChannel(img.Channel.blue).toInt(),
-        startPixel.getChannel(img.Channel.alpha).toInt(),
-      );
-    }
 
     // ***Do first call to floodfill.
     _linearFill(x, y);
@@ -202,14 +204,14 @@ class QueueLinearFloodFiller {
     int blue = pixelColor.getChannel(img.Channel.blue).toInt();
     int alpha = pixelColor.getChannel(img.Channel.alpha).toInt();
 
-    return (red >= (_startColor[0] - _tolerance) &&
-        red <= (_startColor[0] + _tolerance) &&
-        green >= (_startColor[1] - _tolerance) &&
-        green <= (_startColor[1] + _tolerance) &&
-        blue >= (_startColor[2] - _tolerance) &&
-        blue <= (_startColor[2] + _tolerance) &&
-        alpha >= (_startColor[3] - _tolerance) &&
-        alpha <= (_startColor[3] + _tolerance));
+    return (red >= (_startColor.r - _tolerance) &&
+        red <= (_startColor.r + _tolerance) &&
+        green >= (_startColor.g - _tolerance) &&
+        green <= (_startColor.g + _tolerance) &&
+        blue >= (_startColor.b - _tolerance) &&
+        blue <= (_startColor.b + _tolerance) &&
+        alpha >= (_startColor.a - _tolerance) &&
+        alpha <= (_startColor.a + _tolerance));
   }
 }
 
