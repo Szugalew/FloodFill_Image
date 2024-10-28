@@ -14,13 +14,13 @@ class QueueLinearFloodFiller {
   int _height = 0;
   int _cachedWidth = -1;
   int _cachedHeight = -1;
-  int _fillColor = 0;
+  img.ColorInt8 _fillColor = img.ColorInt8.rgba(0, 0, 0, 0);
   int _tolerance = 8;
-  List<int> _startColor = [0, 0, 0, 0];
+  img.ColorInt8 _startColor = img.ColorInt8.rgba(0, 0, 0, 0);
   List<bool>? _pixelsChecked;
   Queue<_FloodFillRange>? _ranges;
 
-  QueueLinearFloodFiller(img.Image imgVal, int newColor) {
+  QueueLinearFloodFiller(img.Image imgVal, Color newColor) {
     image = imgVal;
     _width = image!.width;
     _height = image!.height;
@@ -28,7 +28,8 @@ class QueueLinearFloodFiller {
   }
 
   void resize(Size size) {
-    if (_cachedWidth != size.width.toInt() || _cachedHeight != size.height.toInt()) {
+    if (_cachedWidth != size.width.toInt() ||
+        _cachedHeight != size.height.toInt()) {
       //image = img.copyResize(image!, width: size.width.toInt(), height: size.height.toInt());
       _width = image!.width;
       _height = image!.height;
@@ -37,23 +38,32 @@ class QueueLinearFloodFiller {
     }
   }
 
-  void setTargetColor(int targetColor) {
-    _startColor[0] = img.getRed(targetColor);
-    _startColor[1] = img.getGreen(targetColor);
-    _startColor[2] = img.getBlue(targetColor);
-    _startColor[3] = img.getAlpha(targetColor);
+  void setTargetColor(Color targetColor) {
+    _startColor = img.ColorInt8.rgba(
+      targetColor.red,
+      targetColor.green,
+      targetColor.blue,
+      targetColor.alpha,
+    );
   }
 
   void setTolerance(int value) {
     _tolerance = value.clamp(0, 100);
   }
 
-  int getFillColor() {
-    return _fillColor;
+  Color getFillColor() {
+    return Color.fromARGB(
+      _fillColor.a.toInt(),
+      _fillColor.r.toInt(),
+      _fillColor.g.toInt(),
+      _fillColor.b.toInt(),
+    );
   }
 
-  void setFillColor(int value) {
-    _fillColor = value;
+  void setFillColor(Color value) {
+    _fillColor = img.ColorInt8.rgba(
+      value.red, value.green, value.blue, value.alpha,
+    );
   }
 
   void _prepare() {
@@ -69,13 +79,16 @@ class QueueLinearFloodFiller {
     // Setup
     _prepare();
 
-    if (_startColor[0] == 0) {
+    if (_startColor == Color(0)) {
       // ***Get starting color.
-      int startPixel = image!.getPixelSafe(x, y);
+      img.Pixel startPixel = image!.getPixelSafe(x, y);
 
-      _startColor[0] = img.getRed(startPixel);
-      _startColor[1] = img.getGreen(startPixel);
-      _startColor[2] = img.getBlue(startPixel);
+      _startColor = img.ColorInt8.rgba(
+        startPixel.getChannel(img.Channel.red).toInt(),
+        startPixel.getChannel(img.Channel.green).toInt(),
+        startPixel.getChannel(img.Channel.blue).toInt(),
+        startPixel.getChannel(img.Channel.alpha).toInt(),
+      );
     }
 
     // ***Do first call to floodfill.
@@ -133,7 +146,7 @@ class QueueLinearFloodFiller {
     while (true) {
       // **fill with the color
       //pixels[pxIdx] = _fillColor;
-      image?.setPixelSafe(lFillLoc, y, _fillColor);
+      image?.setPixel(lFillLoc, y, _fillColor);
 
       // **indicate that this pixel has already been checked and filled
       _pixelsChecked![pxIdx] = true;
@@ -158,7 +171,7 @@ class QueueLinearFloodFiller {
 
     while (true) {
       // **fill with the color
-      image?.setPixelSafe(rFillLoc, y, _fillColor);
+      image?.setPixel(rFillLoc, y, _fillColor);
 
       // **indicate that this pixel has already been checked and filled
       _pixelsChecked![pxIdx] = true;
@@ -183,11 +196,11 @@ class QueueLinearFloodFiller {
 
   // Sees if a pixel is within the color tolerance range.
   bool _checkPixel(int x, int y) {
-    int pixelColor = image!.getPixelSafe(x, y);
-    int red = img.getRed(pixelColor);
-    int green = img.getGreen(pixelColor);
-    int blue = img.getBlue(pixelColor);
-    int alpha = img.getAlpha(pixelColor);
+    img.Pixel pixelColor = image!.getPixelSafe(x, y);
+    int red = pixelColor.getChannel(img.Channel.red).toInt();
+    int green = pixelColor.getChannel(img.Channel.green).toInt();
+    int blue = pixelColor.getChannel(img.Channel.blue).toInt();
+    int alpha = pixelColor.getChannel(img.Channel.alpha).toInt();
 
     return (red >= (_startColor[0] - _tolerance) &&
         red <= (_startColor[0] + _tolerance) &&
@@ -204,7 +217,7 @@ class QueueLinearFloodFiller {
 class _FloodFillRange {
   int startX = -1;
   int endX = -1;
-  int y = - 1;
+  int y = -1;
 
   _FloodFillRange(int startX, int endX, int yPos) {
     this.startX = startX;

@@ -37,7 +37,7 @@ class FloodFillPainter extends CustomPainter {
     ByteData byteData = (await image.toByteData(format: ui.ImageByteFormat.png))!;
     var bytes = byteData.buffer.asUint8List();
     img.Image decoded = img.decodeImage(bytes)!;
-    _filler = QueueLinearFloodFiller(decoded, img.getColor(fillColor.red, fillColor.green, fillColor.blue, fillColor.alpha));
+    _filler = QueueLinearFloodFiller(decoded, fillColor);
     onInitialize!();
   }
 
@@ -48,7 +48,7 @@ class FloodFillPainter extends CustomPainter {
   }
 
   void setFillColor(Color color) {
-    _filler?.setFillColor(img.getColor(color.red, color.green, color.blue, color.alpha));
+    _filler?.setFillColor(color);
   }
 
   void setIsFillActive(bool isActive) {
@@ -63,17 +63,17 @@ class FloodFillPainter extends CustomPainter {
     if (tolerance != null) _filler?.setTolerance(tolerance);
   }
 
-  bool _checkAvoidColor(int touchColor) {
+  bool _checkAvoidColor(Color touchColor) {
     if (_avoidColor == null) return false;
 
     return _avoidColor!.any((element) => _isAvoidColor(element, touchColor));
   }
 
-  bool _isAvoidColor(Color avoidColor, int touchColor) {
-    int touchR = img.getRed(touchColor);
-    int touchG = img.getGreen(touchColor);
-    int touchB = img.getBlue(touchColor);
-    int touchA = img.getAlpha(touchColor);
+  bool _isAvoidColor(Color avoidColor, Color touchColor) {
+    int touchR = touchColor.red;
+    int touchG = touchColor.green;
+    int touchB = touchColor.blue;
+    int touchA = touchColor.alpha;
 
     int red = avoidColor.red;
     int green = avoidColor.green;
@@ -101,7 +101,13 @@ class FloodFillPainter extends CustomPainter {
 
     if (pX < 0 || pY < 0) return;
 
-    int touchColor = _filler!.image!.getPixelSafe(pX, pY);
+    img.Pixel touchPixel = _filler!.image!.getPixelSafe(pX, pY);
+    Color touchColor = Color.fromARGB(
+      touchPixel.getChannel(img.Channel.alpha).toInt(),
+      touchPixel.getChannel(img.Channel.red).toInt(),
+      touchPixel.getChannel(img.Channel.green).toInt(),
+      touchPixel.getChannel(img.Channel.blue).toInt(),
+    );
     if (_checkAvoidColor(touchColor)) return;
     if (onFloodFillStart != null) onFloodFillStart!(position,image);
 
